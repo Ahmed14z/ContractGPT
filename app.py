@@ -20,12 +20,12 @@ from supabase.client import  create_client
 # from dotenv import load_dotenv
 # from firestore import db
 from firebase_admin import firestore
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 import os
 from flask_cors import CORS
 
 # Load environment variables from .env file
-load_dotenv()
+# load_dotenv()
 app = Flask(__name__)
 
 CORS(app, supports_credentials=True)
@@ -52,7 +52,7 @@ MODEL_ID = 'GPT-3_5-turbo'
 #Drop Box Config
 configuration = Configuration(
     # Configure HTTP basic authorization: api_key
-    username="ebffdc31428f6518c896b4e7ffe6faadd7c2b614c4271419c3a3cfcfb7369bac",
+    username="afcd15c5bb48d8034a8b8c9cad85978200b25f173f4697adce2768faa13b91d9",
 
     # or, configure Bearer (JWT) authorization: oauth2
     # access_token="YOUR_ACCESS_TOKEN",
@@ -142,7 +142,6 @@ def deleteChat():
     
 @app.route('/drop', methods=['POST'])
 def drop():
-    try:
         # Initialize Dropbox API client
         with ApiClient(configuration) as api_client:
             signature_request_api = apis.SignatureRequestApi(api_client)
@@ -154,8 +153,12 @@ def drop():
             # Extract signer email addresses from the request data
             signer_1_email = request_data["signer_1_email"]
             signer_2_email = request_data["signer_2_email"]
+            title = request_data["title"]
+            subject = request_data["subject"]
+            message = request_data["message"]
+            cc_email_addresses = request_data["cc_email_addresses"]  # Retrieve cc_email_addresses as specified in the request data
 
-            # De
+        
             # Define signers and other options
             signer_1 = models.SubSignatureRequestSigner(
                 email_address=signer_1_email,
@@ -182,14 +185,11 @@ def drop():
             )
 
             data = models.SignatureRequestSendRequest(
-                title="NDA with Acme Co.",
-                subject="The NDA we talked about",
-                message="Please sign this NDA and then we can discuss more. Let me know if you have any questions.",
+                title=title,
+                subject=subject,
+                message=message,
                 signers=[signer_1, signer_2],
-                cc_email_addresses=[
-                    "lawyer1@dropboxsign.com",
-                    "lawyer2@dropboxsign.com",
-                ],
+                cc_email_addresses=cc_email_addresses,
                 files=[open(pdf_file_path, "rb")],  # Use the generated PDF
                 metadata={
                     "custom_id": 1234,
@@ -199,14 +199,17 @@ def drop():
                 field_options=field_options,
                 test_mode=True,
             )
+            try:
 
             # Send a signature request
-            response = signature_request_api.signature_request_send(data)
-            return jsonify({'response': response})
+                response = signature_request_api.signature_request_send(data)
+                print(response)
 
-    except ApiException as e:
-        print("Exception when calling Dropbox Sign API: %s\n" % e)
-        return jsonify({'error': str(e)}, status_code=500)
+                return '', 200
+
+            except ApiException as e:
+                print("Exception when calling Dropbox Sign API: %s\n" % e)
+                return jsonify({'error': str(e)}, status_code=500)
 
 
 
