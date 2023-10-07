@@ -205,7 +205,7 @@ def drop():
                 response = signature_request_api.signature_request_send(data)
                 print(response)
 
-                return '', 200
+                return 'Check your inbox on your email for signing', 200
 
             except ApiException as e:
                 print("Exception when calling Dropbox Sign API: %s\n" % e)
