@@ -207,7 +207,7 @@ def drop():
 
             # Send a signature request
                 response = signature_request_api.signature_request_send(data)
-                print(response)
+                # print(response)
 
                 return 'Check your inbox on your email for signing', 200
 
@@ -271,7 +271,7 @@ def getConversations(google_id):
         # Check if the response contains data
         if response.data:
             rows = response.data
-            print(rows)
+            # print(rows)
             # Create a dictionary to store conv_id as keys and lists of responses as values
             conv_id_responses = {}
             for row in rows:
