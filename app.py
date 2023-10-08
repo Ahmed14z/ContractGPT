@@ -83,8 +83,9 @@ def generate_response_llmchain(prompt, conv_id):
     retriever = vectordb.as_retriever(search_kwargs=dict(k=10,user_id=convid)) # here we use userid with "a" for retreiving memory
     memory = VectorStoreRetrieverMemory(retriever=retriever, memory_key=convid)
     DEFAULT_TEMPLATE = """The following is a friendly conversation between a human and an AI called ContractGPT. 
-   ,The Ai is a Contract Creation assitant designed to make Solid Contracts.
-   The AI should reply with the contract only without any instructions or explainations Only the Contract. If the question isn't contract related or doesn't output a contract reply with 1.
+   ,The Ai is a Contract Creation assitant designed to make Contracts.
+   If the AI does not know the answer to a question, it truthfully says it does not know or reply with the same question.
+   The AI should usually reply with the contract only without any instructions or explainations.
    
 
 Relevant pieces of previous conversation:
@@ -139,7 +140,10 @@ def deleteChat():
         return jsonify({"message": "Chat deleted successfully"})
     except Exception as e:
         return jsonify({"message": f"Error deleting chat: {str(e)}"}, status_code=500)
-    
+
+
+
+
 @app.route('/drop', methods=['POST'])
 def drop():
         # Initialize Dropbox API client
@@ -212,6 +216,77 @@ def drop():
                 return jsonify({'error': str(e)}, status_code=500)
 
 
+
+@app.route('/update' , methods = ["POST"] )
+def saveId():
+    data = request.get_json()
+
+
+    google_id = data["google_id"]
+    conv_id = data["conv_id"]
+    response = data["response"]
+
+    data_to_upsert = {
+        "googleid": google_id,
+        "conv_id": conv_id,
+        "response": response
+    }
+    try:
+        # Attempt to upsert the data into the "Con" table
+        supabase.from_("demo").upsert([data_to_upsert]).execute()
+        return jsonify({"message": "Data upserted successfully"})
+    except Exception as e:
+        # Handle the exception and provide an appropriate error response
+        return jsonify({"error": str(e)}), 500  # HTTP 500 Inter
+
+
+
+# @app.route('/get_conversations/<google_id>', methods=["GET"])
+# def getConversations(google_id):
+#     try:
+#         # Fetch data from the "demo" table based on the provided Google ID
+#         query = supabase.from_("demo").select("conv_id, response").eq("googleid", google_id)
+#         response = query.execute()
+
+#         # Check if the response contains data
+#         if "data" in response:
+#             rows = response["data"]
+
+#             # Create a list of conversations (conv_id and Response)
+#             conversations = [{"conv_id": row["conv_id"], "response": row["response"]} for row in rows]
+
+#             return jsonify({"conversations": conversations})
+#         else:
+#             return jsonify({"conversations": []})  # No data found
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500  # HTTP 500 Internal Server Error for failure
+
+@app.route('/get_conversations/<google_id>', methods=["GET"])
+def getConversations(google_id):
+    try:
+        # Fetch data from the "demo" table based on the provided Google ID
+        query = supabase.from_("demo").select("conv_id, response").eq("googleid", google_id)
+        response = query.execute()
+
+        # Check if the response contains data
+        if response.data:
+            rows = response.data
+            print(rows)
+            # Create a dictionary to store conv_id as keys and lists of responses as values
+            conv_id_responses = {}
+            for row in rows:
+                conv_id = row["conv_id"]
+                response = row["response"]
+                if conv_id not in conv_id_responses:
+                    conv_id_responses[conv_id] = []
+                conv_id_responses[conv_id].append(response)
+
+            return jsonify(conv_id_responses)
+    
+        else:
+            return jsonify({})  # No data found, return an empty dictionary
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  # HTTP 500 Internal Server Error for failure
 
 @app.route('/chat', methods=['POST'])
 def api():
